@@ -5,38 +5,85 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Database fittizio in memoria
+// Il nostro "Database" in memoria (si resetta se il server si riavvia)
 let store = {
     user: { credits: 100 },
     products: [
         { id: 1, name: "Tastiera Meccanica", price: 50, stock: 5 },
-        { id: 2, name: "Mouse Gaming", price: 30, stock: 10 }
+        { id: 2, name: "Mouse Gaming", price: 30, stock: 2 },
+        { id: 3, name: "Monitor 24 pollici", price: 150, stock: 0 } // Esaurito per test
     ]
 };
 
-// 1. GET Catalogo e Saldo
-app.get('/api/data', (req, res) => res.json(store));
+// Generatore di ID semplici
+let nextId = 4;
 
-// 2. POST Acquisto (Logica lato server richiesta!)
+// --- ROTTE API ---
+
+// 1. Ottieni tutti i dati (Catalogo e Crediti)
+app.get('/api/data', (req, res) => {
+    res.json(store);
+});
+
+// 2. Utente: Compra un prodotto
 app.post('/api/buy', (req, res) => {
     const { productId } = req.body;
     const product = store.products.find(p => p.id === productId);
 
-    if (!product) return res.status(404).json({ error: "Prodotto non trovato" });
-    if (product.stock <= 0) return res.status(400).json({ error: "Stock esaurito" });
-    if (store.user.credits < product.price) return res.status(400).json({ error: "Crediti insufficienti" });
+    // CONTROLLI LATO SERVER (Sicurezza richiesta dal compito)
+    if (!product) {
+        return res.status(404).json({ error: "Prodotto non trovato." });
+    }
+    if (product.stock <= 0) {
+        return res.status(400).json({ error: "Prodotto esaurito in magazzino." });
+    }
+    if (store.user.credits < product.price) {
+        return res.status(400).json({ error: "Crediti insufficienti per l'acquisto." });
+    }
 
     // Transazione
     store.user.credits -= product.price;
     product.stock -= 1;
-    res.json({ message: "Acquisto completato!", store });
+    
+    res.json({ message: `Hai acquistato ${product.name}!`, store });
 });
 
-// 3. POST Admin: Aggiungi Crediti
+// 3. Admin: Aggiungi Crediti all'utente
 app.post('/api/admin/credits', (req, res) => {
-    store.user.credits += req.body.amount;
-    res.json(store);
+    const { amount } = req.body;
+    if (amount <= 0) return res.status(400).json({ error: "Inserisci un importo valido." });
+    
+    store.user.credits += amount;
+    res.json({ message: `${amount} crediti aggiunti!`, store });
 });
 
+// 4. Admin: Aggiungi un nuovo prodotto
+app.post('/api/admin/products', (req, res) => {
+    const { name, price, stock } = req.body;
+    if (!name || price < 0 || stock < 0) {
+        return res.status(400).json({ error: "Dati prodotto non validi." });
+    }
+
+    const newProduct = { id: nextId++, name, price, stock };
+    store.products.push(newProduct);
+    res.json({ message: "Prodotto aggiunto!", store });
+});
+
+// 5. Admin: Aggiorna lo stock di un prodotto
+app.put('/api/admin/products/:id/stock', (req, res) => {
+    const productId = parseInt(req.params.id);
+    const { newStock } = req.body;
+    
+    const product = store.products.find(p => p.id === productId);
+    if (!product) return res.status(404).json({ error: "Prodotto non trovato." });
+    if (newStock < 0) return res.status(400).json({ error: "Lo stock non può essere negativo." });
+
+    product.stock = newStock;
+    res.json({ message: "Stock aggiornato!", store });
+});
+
+// Avvio Server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server pronto sulla porta ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server E-commerce in ascolto sulla porta ${PORT}`);
+});
