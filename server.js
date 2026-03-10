@@ -31,9 +31,9 @@ let nextId = 3;
 // ROTTE
 app.get('/', (req, res) => res.send("SERVER ATTIVO - CORS MANUALE"));
 
-app.get('/api/data', (req, res) => res.json(store));
+app.get('/data', (req, res) => res.json(store));
 
-app.post('/api/buy', (req, res) => {
+app.post('/buy', (req, res) => {
     const { productId } = req.body;
     const product = store.products.find(p => p.id === productId);
     if (!product || product.stock <= 0 || store.user.credits < product.price) {
@@ -44,12 +44,12 @@ app.post('/api/buy', (req, res) => {
     res.json({ message: "Acquisto ok", store });
 });
 
-app.post('/api/admin/credits', (req, res) => {
+app.post('/admin/credits', (req, res) => {
     store.user.credits += 50;
     res.json(store);
 });
 
-app.post('/api/admin/products', (req, res) => {
+app.post('/admin/products', (req, res) => {
     const { name, price, stock } = req.body;
     store.products.push({ id: nextId++, name, price: parseInt(price), stock: parseInt(stock) });
     res.json(store);
