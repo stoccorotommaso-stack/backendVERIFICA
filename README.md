@@ -38,5 +38,5 @@ Per permettere la comunicazione tra domini differenti (GitHub Pages e Render), Ã
 * **Hosting:** Render (Back), GitHub Pages (Front).
 
 ---
-**Link Server:** `https://tuo-link.onrender.com`  
-**Link Frontend:** `https://tuo-utente.github.io/tuo-repo/`
+ 
+**Link Frontend:** (https://stoccorotommaso-stack.github.io/frontendVERIFICA/)
